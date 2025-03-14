@@ -1,0 +1,55 @@
+volumes:
+  postgres-data:
+services:
+  rdesktop:
+    image: lscr.io/linuxserver/rdesktop:ubuntu-xfce
+    container_name: rdesktop
+    restart: unless-stopped
+    #security_opt:
+    #  - seccomp:unconfined #optional
+    environment:
+      - PUID=1000
+      - PGID=1000
+      - TZ=Etc/UTC
+    #volumes:
+    #  - /var/run/docker.sock:/var/run/docker.sock #optional
+    #  - /path/to/rdesktop/data:/config #optional
+    ports:
+      - 3399:3389
+    #devices:
+    #  - /dev/dri:/dev/dri #optional
+    shm_size: "1gb" #optional
+  db:
+    container_name: postgresdb
+    image: postgres
+    restart: unless-stopped
+    volumes:
+      - postgres-data:/var/lib/postgresql/data:rw
+    environment:
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_USER: postgres
+      POSTGRES_DB: postgres
+    ports:
+      - 5050:5050
+      - 5432:5432
+  pgadmin:
+    image: dpage/pgadmin4
+    restart: unless-stopped
+    environment:
+      - PGADMIN_CONFIG_ALLOW_SPECIAL_EMAIL_DOMAINS=['localhost']
+      - PGADMIN_DEFAULT_EMAIL=postgres@localhost
+      - PGADMIN_DEFAULT_PASSWORD=postgres
+      - PGADMIN_DISABLE_POSTFIX=true
+      - PGADMIN_LISTEN_PORT=5050
+      - PGADMIN_CONFIG_GLOBALLY_DELIVERABLE=False
+    network_mode: service:db
+  mail:
+    container_name: smtp4dev
+    image: rnwood/smtp4dev
+    environment:
+      - SERVEROPTIONS__URLS=http://*:2525
+      - ASPNETCORE_HTTP_PORTS=2525
+    restart: unless-stopped
+    ports:
+      - 2525:2525
+      - 25:25
